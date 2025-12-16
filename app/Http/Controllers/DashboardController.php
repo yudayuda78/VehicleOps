@@ -7,7 +7,9 @@ use Inertia\Inertia;
 use App\Models\User;
 
 
-
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\VehicleBookingsExport;
 
 use App\Models\Vehicle;
 use App\Models\VehicleBooking;
@@ -85,6 +87,7 @@ class DashboardController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'role' => $user->role,
+                    'office' => $user->office,
                 ],
             ],
         ]);
@@ -246,5 +249,43 @@ public function driver()
             ],
         ]);
     }
+
+public function vehicle(){
+    $fuelUsage = VehicleBooking::select(
+        'vehicle_id',
+        DB::raw('COUNT(*) as total_usage')
+    )
+    ->groupBy('vehicle_id')
+    ->with('vehicle')
+    ->get();
+
+    // 2️⃣ Jadwal Service: ambil kendaraan dengan tanggal service berikutnya
+    $vehiclesService = Vehicle::select('id','name','next_service_date','service_interval_km','status')
+        ->whereNotNull('next_service_date')
+        ->orderBy('next_service_date')
+        ->get();
+
+    // 3️⃣ Riwayat pemakaian kendaraan: booking terakhir
+    $usageHistory = VehicleBooking::with(['vehicle','driver','user'])
+        ->latest()
+        ->limit(20) // misal tampilkan 20 terakhir
+        ->get();
+
+    return Inertia::render('dashboard/vehicle', [
+        'fuelUsage' => $fuelUsage,
+        'vehiclesService' => $vehiclesService,
+        'usageHistory' => $usageHistory,
+    ]);
+}
+
+
+public function exportBooking(Request $request)
+{
+    $startDate = $request->start_date;
+    $endDate = $request->end_date;
+
+    return Excel::download(new VehicleBookingsExport($startDate, $endDate), 'vehicle_bookings.xlsx');
+}
+
 
 }

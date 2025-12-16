@@ -15,14 +15,25 @@ type PaginatedBooking = {
     data: Booking[];
 };
 
+type AuthUser = {
+    id: number;
+    name: string;
+    role: string;
+};
+
 type PageProps = {
     bookings: PaginatedBooking;
+    auth: {
+        user: AuthUser;
+    };
 };
 
 export default function VehicleBookingIndex() {
-    const { bookings } = usePage<PageProps>().props;
+    const { bookings, auth } = usePage<PageProps>().props;
     const [showModal, setShowModal] = useState(false);
     const [rejectBookingId, setRejectBookingId] = useState<number | null>(null);
+
+    console.log('User ID:', auth.user.office.type);
 
     function handleApproval(id: number, status: 'approved' | 'rejected') {
         if (status === 'rejected') {
@@ -38,14 +49,10 @@ export default function VehicleBookingIndex() {
             id,
             status,
         });
-        console.log(`Booking ID ${id} diubah menjadi ${status}`);
     }
 
     function confirmReject() {
         if (rejectBookingId !== null) {
-            console.log(
-                `Booking ID ${rejectBookingId} diubah menjadi rejected`,
-            );
             router.post('approvelevel1', {
                 id: rejectBookingId,
                 status: 'rejected',
@@ -74,14 +81,10 @@ export default function VehicleBookingIndex() {
             id,
             status,
         });
-        console.log(`Booking ID ${id} diubah menjadi ${status}`);
     }
 
     function confirmReject2() {
         if (rejectBookingId !== null) {
-            console.log(
-                `Booking ID ${rejectBookingId} diubah menjadi rejected`,
-            );
             router.post('approvelevel2', {
                 id: rejectBookingId,
                 status: 'rejected',
@@ -103,6 +106,17 @@ export default function VehicleBookingIndex() {
                     Vehicle Booking
                 </h1>
 
+                <button
+                    onClick={() => {
+                        const startDate = '2025-01-01';
+                        const endDate = '2025-01-31';
+                        window.location.href = `/booking/export?start_date=${startDate}&end_date=${endDate}`;
+                    }}
+                    className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                >
+                    Export Excel
+                </button>
+
                 <Link
                     href="/booking/create"
                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -119,7 +133,9 @@ export default function VehicleBookingIndex() {
                             <th className="px-4 py-3 text-left">Driver</th>
                             <th className="px-4 py-3 text-center">Tanggal</th>
                             <th className="px-4 py-3 text-center">Status</th>
-                            <th className="px-4 py-3 text-center">Aksi</th>
+                            {auth.user.role !== 'admin' && (
+                                <th className="px-4 py-3 text-center">Aksi</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -140,63 +156,70 @@ export default function VehicleBookingIndex() {
                                 <td className="px-4 py-3 text-center">
                                     <StatusBadge status={booking.status} />
                                 </td>
-                                <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleApproval(
-                                                    booking.id,
-                                                    'approved',
-                                                )
-                                            }
-                                            className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-green-700"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleApproval(
-                                                    booking.id,
-                                                    'rejected',
-                                                )
-                                            }
-                                            className="flex items-center gap-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700"
-                                        >
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
 
-                                <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleApproval2(
-                                                    booking.id,
-                                                    'approved',
-                                                )
-                                            }
-                                            className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-green-700"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleApproval2(
-                                                    booking.id,
-                                                    'rejected',
-                                                )
-                                            }
-                                            className="flex items-center gap-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700"
-                                        >
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
+                                {auth.user.office?.type === 'branch_office' &&
+                                    auth.user.role === 'approver' && (
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleApproval(
+                                                            booking.id,
+                                                            'approved',
+                                                        )
+                                                    }
+                                                    className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-green-700"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleApproval(
+                                                            booking.id,
+                                                            'rejected',
+                                                        )
+                                                    }
+                                                    className="flex items-center gap-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
+
+                                {auth.user.office?.type === 'head_office' &&
+                                    auth.user.role === 'approver' && (
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleApproval2(
+                                                            booking.id,
+                                                            'approved',
+                                                        )
+                                                    }
+                                                    className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-green-700"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleApproval2(
+                                                            booking.id,
+                                                            'rejected',
+                                                        )
+                                                    }
+                                                    className="flex items-center gap-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                             </tr>
                         ))}
                     </tbody>

@@ -7,6 +7,9 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 
+use App\Exports\VehicleBookingsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 // Route::get('/', function () {
 //     return Inertia::render('welcome', [
 //         'canRegister' => Features::enabled(Features::registration()),
@@ -45,10 +48,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/approvelevel2', [DashboardController::class, 'approveLevel2'])->name('approveLevel2');
     Route::get('/driver', [DashboardController::class, 'driver'])
         ->name('dashboard.driver');
+      Route::get('/vehicle', [DashboardController::class, 'vehicle'])
+        ->name('dashboard.vehicle');
+
+
+    Route::get('/booking/export', [DashboardController::class, 'exportBooking'])->name('booking.export');
+    
 });
 
 
-Route::get('/vehicle', [VehicleController::class, 'index'])
-    ->name('vehicle.index');
+
 
 require __DIR__.'/settings.php';
