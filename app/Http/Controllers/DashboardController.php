@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Driver;
 use Inertia\Inertia;
 use App\Models\User;
+
 
 
 
@@ -11,6 +13,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleBooking;
 use Illuminate\Support\Facades\Auth;
 use App\Services\DriverService;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -73,6 +76,8 @@ class DashboardController extends Controller
             ->latest()
             ->paginate(10);
 
+     
+
         return Inertia::render('dashboard/booking', [
             'bookings' => $bookings,
             'auth' => [
@@ -87,15 +92,37 @@ class DashboardController extends Controller
 
 public function createbooking()
 {
-    $vehicles = Vehicle::all();
-    $drivers = User::where('role', 'driver')->get();
-    $approvers = User::whereIn('role', ['approver', 'manager'])->get();
    $auth = Auth::user();
+
+    // Kendaraan di region yang sama dengan user
+    $vehicles = Vehicle::where('region_id', $auth->region_id)->get();
+
+    // Driver di region yang sama dengan user
+    $drivers = Driver::where('region_id', $auth->region_id)->get();
+
+    // Approver di region yang sama dengan user
+    // Approver Level 1: branch office
+$approverLevel1 = User::where('role', 'approver')
+    ->whereHas('office', function ($q) use ($auth) {
+        $q->where('type', 'branch_office')
+          ->where('region_id', $auth->region_id);
+    })
+    ->get();
+
+// Approver Level 2: head office di region user
+$approverLevel2 = User::where('role', 'approver')
+    ->whereHas('office', function ($q) use ($auth) {
+        $q->where('type', 'head_office')
+          ->where('region_id', $auth->region_id);
+    })
+    ->get();
+ 
 
     return Inertia::render('dashboard/booking/create', [
         'vehicles' => $vehicles,
         'drivers' => $drivers,
-        'approvers' => $approvers,
+        'approverLevel1' => $approverLevel1,
+        'approverLevel2' => $approverLevel2,
         'auth' => [
             'user' => [
                 'id' => $auth->id,
@@ -106,6 +133,100 @@ public function createbooking()
     ]);
 }
 
+
+public function storeBooking(Request $request)
+{
+    $auth = Auth::user();
+ 
+
+    // Validasi input
+    $validated = $request->validate([
+        'vehicle_id' => 'required|exists:vehicles,id',
+        'driver_id' => 'required|exists:drivers,id',
+        'approver_level_1_id' => 'required|exists:users,id',
+        'approver_level_2_id' => 'required|exists:users,id',
+        'date' => 'required|date',
+    ]);
+
+    // Simpan booking
+    $booking = VehicleBooking::create([
+        'region_id' => $auth->region_id, 
+        'vehicle_id' => $validated['vehicle_id'],
+        'driver_id' => $validated['driver_id'],
+        'approver_level_1_id' => $validated['approver_level_1_id'],
+        'approver_level_2_id' => $validated['approver_level_2_id'],
+        'date' => $validated['date'],
+        'user_id' => $auth->id,         // siapa yang request
+        'created_by' => $auth->id,
+        'status' => 'draft',          // default status
+    ]);
+
+    // Return response (Inertia redirect)
+    return redirect()->route('dashboard.bookings')
+                     ->with('success', 'Booking berhasil dibuat!');
+}
+
+public function approveLevel1(Request $request){
+ 
+    if($request->status === "approved"){
+        
+        $id = $request->id; // ambil dari body request
+        $booking = VehicleBooking::find($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking tidak ditemukan'], 404);
+        }
+
+        $booking->status = "Pending";
+        $booking->save();
+   
+    }else if($request->status === "rejected"){
+        $id = $request->id; // ambil dari body request
+        $booking = VehicleBooking::find($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking tidak ditemukan'], 404);
+        }
+
+        $booking->status = "Rejected";
+        $booking->save();  
+    }
+    
+    
+    return redirect()->route('dashboard.bookings');
+}
+
+
+
+public function approveLevel2(Request $request){
+ 
+    if($request->status === "approved"){
+        
+        $id = $request->id; // ambil dari body request
+        $booking = VehicleBooking::find($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking tidak ditemukan'], 404);
+        }
+
+        $booking->status = "Approved";
+        $booking->save();
+   
+    }else if($request->status === "rejected"){
+        $id = $request->id; // ambil dari body request
+        $booking = VehicleBooking::find($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking tidak ditemukan'], 404);
+        }
+
+        $booking->status = "Rejected";
+        $booking->save();  
+    }
+    
+    
+    return redirect()->route('dashboard.bookings');
+}
 
 public function driver()
     {

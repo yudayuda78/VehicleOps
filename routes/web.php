@@ -40,6 +40,9 @@ Route::middleware('auth')->group(function () {
         ->name('dashboard.bookings');
      Route::get('/booking/create', [DashboardController::class, 'createbooking'])
         ->name('dashboard.bookings');
+    Route::post('/booking', [DashboardController::class, 'storeBooking'])->name('booking.store');
+    Route::post('/approvelevel1', [DashboardController::class, 'approveLevel1'])->name('approveLevel1');
+    Route::post('/approvelevel2', [DashboardController::class, 'approveLevel2'])->name('approveLevel2');
     Route::get('/driver', [DashboardController::class, 'driver'])
         ->name('dashboard.driver');
 });

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('region_id')->constrained()->cascadeOnDelete();
             $table->foreignId('vehicle_id')->constrained()->cascadeOnDelete();
             $table->foreignId('driver_id')->constrained()->cascadeOnDelete();
+            $table->date('date');
 
             // User yang memesan dan yang membuat record
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // pemesan
@@ -28,6 +29,7 @@ return new class extends Migration
 
             $table->foreignId('approver_level_2_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('approved_level_2_at')->nullable();
+        
 
             // Status pemesanan
             $table->enum('status', ['draft', 'pending', 'approved', 'rejected'])->default('draft');
