@@ -9,9 +9,9 @@ Aplikasi web untuk pemesanan dan monitoring kendaraan perusahaan, termasuk konsu
 
 | Username               | Password   | Role            | Office Type       |
 | --------------------- | --------- | --------------- | ---------------- |
-| admin@vehicle.com      | password  | Admin           | Head Office      |
-| approver1@vehicle.com  | password  | Approver Level 1| Branch Office    |
-| approver2@vehicle.com  | password  | Approver Level 2| Head Office      |
+| admin-ho-ho@example.com      | password123  | Admin           | Head Office      |
+| approver1-ho-ho@example.com  | password123  | Approver Level 1| Branch Office    |
+| approver1-br-ho@example.com  | password123  | Approver Level 2| Head Office      |
 
 > **Catatan:** Ganti password default setelah login pertama untuk keamanan.
 
@@ -85,3 +85,6 @@ Laporan
     Halaman laporan menampilkan semua pemesanan kendaraan.
     Filter laporan berdasarkan tanggal mulai dan akhir.
     Export laporan ke file Excel (.xlsx).
+
+
+![Activity Diagram](docs/activity-diagram.png)
