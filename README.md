@@ -87,4 +87,8 @@ Laporan
     Export laporan ke file Excel (.xlsx).
 
 
+## 5. Diagram Activity
 ![Activity Diagram](docs/activity-diagram.png)
+
+## 6. Physical Data Model
+![Activity Diagram](docs/physical-data-model.png)
