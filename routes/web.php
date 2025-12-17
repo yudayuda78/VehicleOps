@@ -22,6 +22,10 @@ use Maatwebsite\Excel\Facades\Excel;
 //     })->name('dashboard');
 // });
 
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -50,7 +54,10 @@ Route::middleware('auth')->group(function () {
         ->name('dashboard.driver');
       Route::get('/vehicle', [DashboardController::class, 'vehicle'])
         ->name('dashboard.vehicle');
-
+     Route::get('/laporan', [DashboardController::class, 'laporan'])
+        ->name('dashboard.laporan');
+    Route::get('/logs', [DashboardController::class, 'logs'])
+     ->name('dashboard.logs');
 
     Route::get('/booking/export', [DashboardController::class, 'exportBooking'])->name('booking.export');
     

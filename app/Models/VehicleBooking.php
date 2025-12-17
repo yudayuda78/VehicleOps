@@ -64,4 +64,10 @@ class VehicleBooking extends Model
     {
         return $this->belongsTo(Region::class);
     }
+
+    public function logs()
+{
+    return $this->hasMany(BookingLog::class, 'booking_id');
+}
+
 }

@@ -4,10 +4,12 @@ import { PropsWithChildren } from 'react';
 
 const menu = [
     { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Office', href: '/office' },
-    { name: 'Vehicle', href: '/vehicle' },
     { name: 'Vehicle Booking', href: '/booking' },
-    { name: 'Driver', href: '/driver' },
+    { name: 'Vehicle', href: '/vehicle' },
+
+    { name: 'Laporan', href: '/laporan' },
+    // { name: 'Driver', href: '/driver' },
+    { name: 'Logs', href: '/logs' },
 ];
 
 export default function AppLayout({ children }: PropsWithChildren) {
@@ -17,7 +19,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
     const notifications = props.notifications || []; // asumsi dari backend
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
+        <div className="flex min-h-screen bg-gray-100 text-black">
             {/* Sidebar */}
             <aside className="w-64 bg-slate-900 text-white">
                 <div className="border-b border-slate-700 p-4 text-xl font-bold">

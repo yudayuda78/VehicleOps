@@ -33,7 +33,16 @@ export default function VehicleBookingIndex() {
     const [showModal, setShowModal] = useState(false);
     const [rejectBookingId, setRejectBookingId] = useState<number | null>(null);
 
-    console.log('User ID:', auth.user.office.type);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    const handleExport = () => {
+        if (!startDate || !endDate) {
+            alert('Pilih tanggal mulai dan tanggal akhir');
+            return;
+        }
+        window.location.href = `/booking/export?start_date=${startDate}&end_date=${endDate}`;
+    };
 
     function handleApproval(id: number, status: 'approved' | 'rejected') {
         if (status === 'rejected') {
@@ -106,23 +115,35 @@ export default function VehicleBookingIndex() {
                     Vehicle Booking
                 </h1>
 
-                <button
-                    onClick={() => {
-                        const startDate = '2025-01-01';
-                        const endDate = '2025-01-31';
-                        window.location.href = `/booking/export?start_date=${startDate}&end_date=${endDate}`;
-                    }}
-                    className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                >
-                    Export Excel
-                </button>
+                <div className="flex gap-2">
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="rounded-lg border px-3 py-2 text-sm text-black"
+                    />
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="rounded-lg border px-3 py-2 text-sm text-black"
+                    />
+                    <button
+                        onClick={handleExport}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                        Export Excel
+                    </button>
 
-                <Link
-                    href="/booking/create"
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                    + Booking Kendaraan
-                </Link>
+                    {auth.user.role === 'admin' && (
+                        <Link
+                            href="/booking/create"
+                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        >
+                            + Booking Kendaraan
+                        </Link>
+                    )}
+                </div>
             </div>
 
             <div className="mt-6 overflow-hidden rounded-xl bg-white shadow">

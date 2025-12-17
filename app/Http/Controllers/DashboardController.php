@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\VehicleBookingsExport;
+use App\Models\BookingLog;
 
 use App\Models\Vehicle;
 use App\Models\VehicleBooking;
@@ -67,16 +68,29 @@ class DashboardController extends Controller
     public function bookings()
     {
         $user = Auth::user();
+        
 
-        $bookings = VehicleBooking::with([
-                'vehicle',
-                'driver',
-                'requester',
-                'approverLevel1',
-                'approverLevel2',
-            ])
-            ->latest()
-            ->paginate(10);
+          $query = VehicleBooking::with([
+        'vehicle',
+        'driver',
+        'requester',
+        'approverLevel1',
+        'approverLevel2',
+    ])->latest();
+
+    // Filter berdasarkan role dan office
+    if ($user->role === 'approver') {
+      
+        if ($user->office->type === 'branch_office') {
+             
+            $query->where('status', 'draft');
+        } elseif ($user->office->type === 'head_office') {
+            $query->where('status', 'pending');
+        }
+    }
+
+    $bookings = $query->paginate(10);
+
 
      
 
@@ -105,7 +119,7 @@ public function createbooking()
 
     // Approver di region yang sama dengan user
     // Approver Level 1: branch office
-$approverLevel1 = User::where('role', 'approver')
+    $approverLevel1 = User::where('role', 'approver')
     ->whereHas('office', function ($q) use ($auth) {
         $q->where('type', 'branch_office')
           ->where('region_id', $auth->region_id);
@@ -113,12 +127,14 @@ $approverLevel1 = User::where('role', 'approver')
     ->get();
 
 // Approver Level 2: head office di region user
-$approverLevel2 = User::where('role', 'approver')
+    $approverLevel2 = User::where('role', 'approver')
     ->whereHas('office', function ($q) use ($auth) {
         $q->where('type', 'head_office')
           ->where('region_id', $auth->region_id);
     })
     ->get();
+
+    
  
 
     return Inertia::render('dashboard/booking/create', [
@@ -164,12 +180,22 @@ public function storeBooking(Request $request)
         'status' => 'draft',          // default status
     ]);
 
+     BookingLog::create([
+        'booking_id' => $booking->id,
+        'user_id' => $auth->id,
+        'action' => 'created',
+        'note' => 'Booking dibuat oleh ' . $auth->name,
+    ]);
+
     // Return response (Inertia redirect)
     return redirect()->route('dashboard.bookings')
                      ->with('success', 'Booking berhasil dibuat!');
 }
 
 public function approveLevel1(Request $request){
+    $auth = Auth::user();
+
+    $id = $request->id;
  
     if($request->status === "approved"){
         
@@ -182,6 +208,13 @@ public function approveLevel1(Request $request){
 
         $booking->status = "Pending";
         $booking->save();
+
+        BookingLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => $auth->id,
+            'action' => 'approved',
+            'note' => 'Booking disetujui oleh ' . $auth->name . ' (Level 1)',
+        ]);
    
     }else if($request->status === "rejected"){
         $id = $request->id; // ambil dari body request
@@ -193,6 +226,13 @@ public function approveLevel1(Request $request){
 
         $booking->status = "Rejected";
         $booking->save();  
+
+        BookingLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => $auth->id,
+            'action' => 'rejected',
+            'note' => 'Booking tidak disetujui oleh ' . $auth->name . ' (Level 1)',
+        ]);
     }
     
     
@@ -202,7 +242,7 @@ public function approveLevel1(Request $request){
 
 
 public function approveLevel2(Request $request){
- 
+    $auth = Auth::user();
     if($request->status === "approved"){
         
         $id = $request->id; // ambil dari body request
@@ -214,6 +254,13 @@ public function approveLevel2(Request $request){
 
         $booking->status = "Approved";
         $booking->save();
+
+        BookingLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => $auth->id,
+            'action' => 'approved',
+            'note' => 'Booking disetujui oleh ' . $auth->name . ' (Level 2)',
+        ]);
    
     }else if($request->status === "rejected"){
         $id = $request->id; // ambil dari body request
@@ -225,6 +272,13 @@ public function approveLevel2(Request $request){
 
         $booking->status = "Rejected";
         $booking->save();  
+
+        BookingLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => $auth->id,
+            'action' => 'rejected',
+            'note' => 'Booking tidak disetujui oleh ' . $auth->name . ' (Level 2)',
+        ]);
     }
     
     
@@ -285,6 +339,42 @@ public function exportBooking(Request $request)
     $endDate = $request->end_date;
 
     return Excel::download(new VehicleBookingsExport($startDate, $endDate), 'vehicle_bookings.xlsx');
+}
+
+public function laporan(Request $request){
+        $query = VehicleBooking::with(['vehicle', 'driver', 'user']);
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('date', [$request->start_date, $request->end_date]);
+        }
+
+        $bookings = $query->orderBy('date','desc')->get();
+
+        return Inertia::render('dashboard/laporan', [
+            'bookings' => $bookings,
+            'filters' => $request->only(['start_date','end_date'])
+        ]);
+}
+
+public function logs(){
+       $logs = BookingLog::with(['booking', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'booking_id' => $log->booking_id,
+                    'vehicle' => $log->booking->vehicle->name ?? '-',
+                    'user' => $log->user->name,
+                    'action' => $log->action,
+                    'note' => $log->note,
+                    'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+        return Inertia::render('dashboard/logs', [
+            'logs' => $logs,
+        ]);
 }
 
 
